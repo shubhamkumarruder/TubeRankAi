@@ -1,244 +1,237 @@
-
 import React, { useState } from 'react';
-import { SeoOutputData, ChannelAuditData, AppMode } from '../types';
-import { Copy, Check, FileText, Tag, Image as ImageIcon, Type, Settings, TrendingUp, Users, Eye, PlaySquare, AlertCircle } from 'lucide-react';
+import { SeoOutputData } from '../types';
+import { Copy, Check, FileText, Tag, Image as ImageIcon, Type, Settings, Hash, FolderTree, Sparkles } from 'lucide-react';
 
 interface OutputSectionProps {
-  mode: AppMode;
   data: SeoOutputData | null;
-  auditData: ChannelAuditData | null;
   onGenerateImage: () => void;
   isGeneratingImage: boolean;
+  onSaveProject?: () => void;
+  isSavingProject?: boolean;
+  isSavedProject?: boolean;
 }
 
-const OutputSection: React.FC<OutputSectionProps> = ({ mode, data, auditData, onGenerateImage, isGeneratingImage }) => {
-  
-  // Render Generator Output (Existing logic)
-  if (mode === AppMode.GENERATOR && data) {
-    const tagsString = data.tags.join(', ');
-    const tagsCount = tagsString.length;
+const OutputSection: React.FC<OutputSectionProps> = ({
+  data,
+  onGenerateImage,
+  isGeneratingImage,
+  onSaveProject,
+  isSavingProject,
+  isSavedProject,
+}) => {
+  if (!data) return null;
 
-    return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          <ResultCard title="Viral Titles" icon={<Type className="text-blue-500 dark:text-blue-400" />}>
-            <div className="space-y-3">
-              {data.titles.map((title, idx) => (
-                <CopyableItem key={idx} text={title} />
-              ))}
-            </div>
-          </ResultCard>
+  const titles = Array.isArray(data.titles) ? data.titles : [];
+  const descriptions = Array.isArray(data.descriptions) ? data.descriptions : [];
+  const tags = Array.isArray(data.tags) ? data.tags : [];
+  const tagsString = tags.join(', ');
+  const tagsCount = tagsString.length;
 
-          <ResultCard title="Structured SEO Descriptions" icon={<FileText className="text-green-500 dark:text-green-400" />}>
-            <div className="space-y-8">
-              {data.descriptions.map((desc, idx) => (
-                <div key={idx} className="bg-primary-50 dark:bg-slate-900/50 rounded-lg border border-primary-100 dark:border-slate-700/50 overflow-hidden">
-                  <div className="flex justify-between items-center p-3 bg-primary-100/50 dark:bg-slate-800/50 border-b border-primary-100 dark:border-slate-700/50">
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Option {idx + 1}</span>
-                    <CopyButton text={desc} />
-                  </div>
-                  <div className="p-5">
-                    <pre className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap font-sans leading-relaxed">
-                        {desc}
-                    </pre>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ResultCard>
+  // Extract or build hashtags list safely
+  const hashtagsList = data.hashtags && Array.isArray(data.hashtags) && data.hashtags.length > 0
+    ? data.hashtags.map((h) => (h && h.startsWith('#') ? h : `#${h}`))
+    : tags.slice(0, 6).map((t) => `#${t.replace(/\s+/g, '')}`);
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <ResultCard title="SEO Tags" icon={<Tag className="text-purple-500 dark:text-purple-400" />}>
-               <div className="relative">
-                 <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50 min-h-[120px]">
-                    <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{tagsString}</p>
-                 </div>
-                 <div className="mt-2 flex justify-between items-center text-xs">
-                    <span className={`${tagsCount > 500 ? 'text-red-500 font-bold' : 'text-slate-400'}`}>
-                        {tagsCount}/500 chars
-                    </span>
-                    <CopyButton text={tagsString} />
-                 </div>
-               </div>
-            </ResultCard>
+  const hashtagsString = hashtagsList.join(' ');
 
-            <ResultCard title="Technical Recommended" icon={<Settings className="text-slate-500 dark:text-slate-400" />}>
-                <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50 h-full flex flex-col justify-center space-y-4">
-                   <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Resolution</span>
-                     <span className="text-sm font-bold text-slate-900 dark:text-white">1920x1080 (HD)</span>
-                   </div>
-                   <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Aspect Ratio</span>
-                     <span className="text-sm font-bold text-slate-900 dark:text-white">16:9</span>
-                   </div>
-                    <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
-                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Thumbnail Size</span>
-                     <span className="text-sm font-bold text-slate-900 dark:text-white">1280x720 (Min)</span>
-                   </div>
-                   <div className="flex justify-between items-center">
-                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Max File Size</span>
-                     <span className="text-sm font-bold text-slate-900 dark:text-white">2 MB</span>
-                   </div>
-                </div>
-            </ResultCard>
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      {/* Category & Grounding Banner */}
+      <div className="bg-gradient-to-r from-primary-500/10 via-indigo-500/10 to-purple-500/10 border border-primary-200 dark:border-primary-800/40 rounded-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 backdrop-blur-sm">
+        <div className="flex items-center gap-2.5">
+          <span className="p-1.5 bg-primary-600 text-white rounded-lg shadow-sm">
+            <FolderTree className="w-4 h-4" />
+          </span>
+          <div>
+            <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold block">
+              Target YouTube Category
+            </span>
+            <span className="text-base font-bold text-slate-900 dark:text-white">
+              {data.category || 'General'}
+            </span>
           </div>
-
-          <ResultCard title="Thumbnail Strategy" icon={<ImageIcon className="text-orange-500 dark:text-orange-400" />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50">
-                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Text Overlay Idea</h4>
-                <div className="flex justify-between items-center">
-                   <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">"{data.thumbnailText}"</p>
-                   <CopyButton text={data.thumbnailText} />
-                </div>
-              </div>
-              <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50">
-                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Suggested Filename</h4>
-                 <div className="flex justify-between items-center">
-                   <p className="text-sm text-primary-600 dark:text-primary-300 font-mono truncate">{data.fileName}</p>
-                   <CopyButton text={data.fileName} />
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-4 bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50">
-               <div className="flex justify-between items-start mb-2">
-                  <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">AI Image Prompt</h4>
-                  <CopyButton text={data.thumbnailPrompt} />
-               </div>
-               <p className="text-sm text-slate-700 dark:text-slate-300 italic mb-4">{data.thumbnailPrompt}</p>
-               <button
-                onClick={onGenerateImage}
-                disabled={isGeneratingImage}
-                className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white text-sm font-bold rounded-lg transition-all flex justify-center items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-500/20 transform hover:scale-[1.01]"
-               >
-                 {isGeneratingImage ? 'Generating 4 Viral Variations...' : '✨ Generate 4 Viral Thumbnail Variations'}
-               </button>
-            </div>
-          </ResultCard>
         </div>
-    );
-  }
 
-  // Render Audit Output
-  if (mode === AppMode.AUDIT && auditData) {
-      // Logic for "Not Watched"
-      // Note: This is an estimation based on Sub count vs Average Views.
-      const subscribers = auditData.subscriberCountNumber;
-      const avgViews = auditData.avgViewsPerVideo;
-      const notWatched = Math.max(0, subscribers - avgViews);
-      
-      return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard icon={<Users className="text-blue-500" />} label="Subscribers" value={auditData.subscribers} />
-                <StatCard icon={<Eye className="text-green-500" />} label="Total Views" value={auditData.totalViews} />
-                <StatCard icon={<PlaySquare className="text-red-500" />} label="Videos" value={auditData.videoCount} />
-            </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {data.isGrounded && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-full border border-blue-200 dark:border-blue-800/50">
+              <Sparkles className="w-3.5 h-3.5" /> Google Search Grounded
+            </span>
+          )}
 
-            <div className="bg-white dark:bg-slate-800/50 border border-primary-100 dark:border-slate-700 rounded-xl p-6 shadow-lg">
-                <div className="flex items-center gap-2 mb-6">
-                    <AlertCircle className="text-purple-500" />
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Engagement Analysis</h3>
+          {onSaveProject && (
+            <button
+              onClick={onSaveProject}
+              disabled={isSavingProject || isSavedProject}
+              className={`inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-all ${
+                isSavedProject
+                  ? 'bg-green-600 text-white cursor-default'
+                  : 'bg-primary-600 hover:bg-primary-700 text-white active:scale-95'
+              }`}
+            >
+              {isSavedProject ? (
+                <>
+                  <Check className="w-3.5 h-3.5" /> Saved to Firebase
+                </>
+              ) : isSavingProject ? (
+                'Saving...'
+              ) : (
+                'Save Project to Firebase'
+              )}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Viral Titles */}
+      <ResultCard title="Viral Titles (CTR Optimized)" icon={<Type className="text-blue-500 dark:text-blue-400" />}>
+        <div className="space-y-3">
+          {titles.map((title, idx) => (
+            <CopyableItem key={idx} text={title} />
+          ))}
+        </div>
+      </ResultCard>
+
+      {/* Structured SEO Descriptions with Integrated Hashtags */}
+      <ResultCard
+        title="Structured SEO Descriptions (Hashtags Included Directly Below)"
+        icon={<FileText className="text-green-500 dark:text-green-400" />}
+      >
+        <div className="space-y-8">
+          {descriptions.map((desc, idx) => {
+            // Ensure full combined content includes description + hashtags
+            const fullContent = desc.includes('#') ? desc : `${desc.trim()}\n\n${hashtagsString}`;
+
+            return (
+              <div
+                key={idx}
+                className="bg-primary-50 dark:bg-slate-900/50 rounded-lg border border-primary-200 dark:border-slate-700 overflow-hidden shadow-sm"
+              >
+                {/* Header with Quick 1-Click Copy */}
+                <div className="flex flex-wrap justify-between items-center px-4 py-3 bg-primary-100/60 dark:bg-slate-800 border-b border-primary-200 dark:border-slate-700 gap-2">
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                    Option {idx + 1} • Complete Description & Hashtags
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <CopyActionButton text={fullContent} label="Copy Description + Hashtags" />
+                  </div>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    <div className="space-y-6">
-                        <div>
-                            <div className="flex justify-between mb-1">
-                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Watched (Avg. Views)</span>
-                                <span className="text-sm font-bold text-green-500">{avgViews.toLocaleString()}</span>
-                            </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                                <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${Math.min(100, (avgViews / subscribers) * 100)}%` }}></div>
-                            </div>
-                        </div>
-                        <div>
-                             <div className="flex justify-between mb-1">
-                                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Did Not Watch (Inactive Subs)</span>
-                                <span className="text-sm font-bold text-slate-500 dark:text-slate-400">{notWatched.toLocaleString()}</span>
-                            </div>
-                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5">
-                                <div className="bg-slate-400 h-2.5 rounded-full" style={{ width: `${Math.min(100, (notWatched / subscribers) * 100)}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
-                        <h4 className="font-bold text-slate-900 dark:text-white mb-2">Audit Summary</h4>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{auditData.auditSummary}</p>
-                    </div>
-                </div>
-            </div>
 
-            <ResultCard title="Top Performing Topics" icon={<TrendingUp className="text-orange-500" />}>
-                <div className="flex flex-wrap gap-2">
-                    {auditData.topPerformingContent.map((topic, i) => (
-                        <span key={i} className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-sm font-medium">
-                            {topic}
-                        </span>
+                {/* Description Body */}
+                <div className="p-5">
+                  <pre className="text-slate-700 dark:text-slate-200 text-sm whitespace-pre-wrap font-sans leading-relaxed">
+                    {fullContent}
+                  </pre>
+                </div>
+
+                {/* Attached Hashtags Bar Directly Under Description */}
+                <div className="px-5 py-3.5 bg-white/70 dark:bg-slate-950/40 border-t border-primary-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 uppercase">
+                      <Hash className="w-3.5 h-3.5 text-primary-500" /> Hashtags:
+                    </span>
+                    {hashtagsList.map((tag, tIdx) => (
+                      <span
+                        key={tIdx}
+                        className="text-xs font-semibold px-2 py-0.5 bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 rounded border border-primary-200 dark:border-primary-800/40"
+                      >
+                        {tag}
+                      </span>
                     ))}
+                  </div>
+                  <CopyButton text={hashtagsString} />
                 </div>
-            </ResultCard>
+              </div>
+            );
+          })}
         </div>
-      );
-  }
+      </ResultCard>
 
-  return null;
+      {/* SEO Tags & Technical Specs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ResultCard title="SEO Tags (YouTube Search Tags)" icon={<Tag className="text-purple-500 dark:text-purple-400" />}>
+          <div className="relative">
+            <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50 min-h-[120px]">
+              <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">{tagsString}</p>
+            </div>
+            <div className="mt-3 flex justify-between items-center text-xs">
+              <span className={`${tagsCount > 500 ? 'text-red-500 font-bold' : 'text-slate-500 dark:text-slate-400'}`}>
+                {tagsCount}/500 characters
+              </span>
+              <CopyActionButton text={tagsString} label="Copy All Tags" />
+            </div>
+          </div>
+        </ResultCard>
+
+        <ResultCard title="Technical Recommendations" icon={<Settings className="text-slate-500 dark:text-slate-400" />}>
+          <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50 h-full flex flex-col justify-center space-y-3.5">
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Resolution</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">1920x1080 (HD / 4K)</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Aspect Ratio</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">16:9 (Long) / 9:16 (Shorts)</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-700 pb-2">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Thumbnail Size</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">1280x720 (Recommended)</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Max File Size</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">2 MB</span>
+            </div>
+          </div>
+        </ResultCard>
+      </div>
+
+      {/* Thumbnail Strategy */}
+      <ResultCard title="Thumbnail Strategy & AI Creator" icon={<ImageIcon className="text-orange-500 dark:text-orange-400" />}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Text Overlay Idea</h4>
+            <div className="flex justify-between items-center">
+              <p className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase">
+                "{data.thumbnailText}"
+              </p>
+              <CopyButton text={data.thumbnailText} />
+            </div>
+          </div>
+          <div className="bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Suggested Filename</h4>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-primary-600 dark:text-primary-300 font-mono truncate">{data.fileName}</p>
+              <CopyButton text={data.fileName} />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 bg-primary-50 dark:bg-slate-900/50 p-4 rounded-lg border border-primary-100 dark:border-slate-700/50">
+          <div className="flex justify-between items-start mb-2">
+            <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">AI Image Prompt</h4>
+            <CopyButton text={data.thumbnailPrompt} />
+          </div>
+          <p className="text-sm text-slate-700 dark:text-slate-300 italic mb-4">{data.thumbnailPrompt}</p>
+          <button
+            onClick={onGenerateImage}
+            disabled={isGeneratingImage}
+            className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 text-white text-sm font-bold rounded-lg transition-all flex justify-center items-center gap-2 disabled:opacity-50 shadow-lg shadow-orange-500/20 transform hover:scale-[1.01]"
+          >
+            {isGeneratingImage ? 'Generating Viral Thumbnail Variations...' : '✨ Generate Viral Thumbnail Variations'}
+          </button>
+        </div>
+      </ResultCard>
+    </div>
+  );
 };
 
 // --- Helper Components ---
 
-const StatBox: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
-    <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
-        <div className="mb-2 p-1.5 bg-white dark:bg-slate-800 rounded-full shadow-sm">{icon}</div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1">{label}</p>
-        <p className="text-sm font-bold text-slate-900 dark:text-white truncate w-full">{value}</p>
-    </div>
-);
-
-const ScoreGauge: React.FC<{ label: string; score: number; color: 'blue' | 'purple' }> = ({ label, score, color }) => {
-    const isBlue = color === 'blue';
-    return (
-        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <div>
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">{label}</p>
-                <p className={`text-2xl font-black ${isBlue ? 'text-blue-600 dark:text-blue-400' : 'text-purple-600 dark:text-purple-400'}`}>{score}/100</p>
-            </div>
-             <div className="relative w-12 h-12">
-                <svg className="w-full h-full" viewBox="0 0 36 36">
-                    <path
-                        className="text-slate-200 dark:text-slate-700"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                    />
-                    <path
-                        className={`${isBlue ? 'text-blue-500' : 'text-purple-500'}`}
-                        strokeDasharray={`${score}, 100`}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                    />
-                </svg>
-            </div>
-        </div>
-    )
-}
-
-const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
-    <div className="bg-white dark:bg-slate-800/50 border border-primary-100 dark:border-slate-700 rounded-xl p-4 shadow flex items-center gap-4">
-        <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-full">{icon}</div>
-        <div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">{label}</p>
-            <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
-        </div>
-    </div>
-);
-
-const ResultCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
+const ResultCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({
+  title,
+  icon,
+  children,
+}) => (
   <div className="bg-white dark:bg-slate-800/50 border border-primary-100 dark:border-slate-700 rounded-xl p-6 shadow-lg shadow-primary-900/5 dark:shadow-none transition-colors duration-300">
     <div className="flex items-center gap-2 mb-6 border-b border-primary-100 dark:border-slate-700 pb-3">
       {icon}
@@ -254,6 +247,37 @@ const CopyableItem: React.FC<{ text: string }> = ({ text }) => (
     <CopyButton text={text} />
   </div>
 );
+
+const CopyActionButton: React.FC<{ text: string; label: string }> = ({ text, label }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+        copied
+          ? 'bg-green-600 text-white shadow-sm'
+          : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm'
+      }`}
+    >
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5 text-white" /> Copied!
+        </>
+      ) : (
+        <>
+          <Copy className="w-3.5 h-3.5" /> {label}
+        </>
+      )}
+    </button>
+  );
+};
 
 const CopyButton: React.FC<{ text: string }> = ({ text }) => {
   const [copied, setCopied] = useState(false);

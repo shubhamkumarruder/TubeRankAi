@@ -1,5 +1,8 @@
 {
   "name": "TubeRank AI",
   "description": "A professional YouTube SEO tool powered by Gemini that generates optimized titles, descriptions, tags, and thumbnails.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
